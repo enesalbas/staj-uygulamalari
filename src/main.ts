@@ -1,16 +1,19 @@
+import { readFile } from "fs/promises";
 import { User, Role } from "./types";
 
-import { readFile } from "fs/promises";
-
 function filterByRole<T extends User>(users: T[], role: Role): T[] {
-    return users.filter((user) => user.role==role);
+  return users.filter((user) => user.role === role);
 }
 
 async function main() {
-  const raw = await readFile("data/users.json", "utf-8");
-   const users = JSON.parse(raw);
-   const yeniDeger = filterByRole(users, "developer")
-   console.log (yeniDeger)
+  try {
+    const raw = await readFile("data/users.json", "utf-8");
+    const users = JSON.parse(raw);
+    const filtrelenmis = filterByRole(users, "developer");
+    console.log(filtrelenmis);
+  } catch (err) {
+    console.error("Kullanıcı listesi okunurken bir hata oluştu:", (err as Error).message);
+  }
 }
 
 main();
