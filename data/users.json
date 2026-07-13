@@ -1,0 +1,6 @@
+[
+  { "id": 1, "name": "Ayşe Yılmaz", "email": "ayse@example.com", "role": "admin" },
+  { "id": 2, "name": "Mehmet Demir", "email": "mehmet@example.com", "role": "developer" },
+  { "id": 3, "name": "Zeynep Kaya", "email": "zeynep@example.com", "role": "developer" },
+  { "id": 4, "name": "Ali Can", "email": "ali@example.com", "role": "intern" }
+]
