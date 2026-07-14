@@ -1,0 +1,17 @@
+[
+  { "ad": "Ayşe Yılmaz", "takim": "Backend", "maas": 42000, "iseGirisYili": 2019 },
+  { "ad": "Mehmet Demir", "takim": "Frontend", "maas": 38000, "iseGirisYili": 2021 },
+  { "ad": "Zeynep Kaya", "takim": "Backend", "maas": 51000, "iseGirisYili": 2018 },
+  { "ad": "Ali Can", "takim": "DevOps", "maas": 47000, "iseGirisYili": 2020 },
+  { "ad": "Fatma Şahin", "takim": "Frontend", "maas": 35000, "iseGirisYili": 2022 },
+  { "ad": "Emre Aydın", "takim": "Backend", "maas": 45000, "iseGirisYili": 2017 },
+  { "ad": "Elif Çelik", "takim": "QA", "maas": 33000, "iseGirisYili": 2023 },
+  { "ad": "Burak Arslan", "takim": "DevOps", "maas": 49000, "iseGirisYili": 2019 },
+  { "ad": "Deniz Koç", "takim": "Frontend", "maas": 40000, "iseGirisYili": 2020 },
+  { "ad": "Selin Yıldız", "takim": "QA", "maas": 31000, "iseGirisYili": 2021 },
+  { "ad": "Kerem Öztürk", "takim": "Backend", "maas": 55000, "iseGirisYili": 2016 },
+  { "ad": "Ece Aksoy", "takim": "Frontend", "maas": 37000, "iseGirisYili": 2019 },
+  { "ad": "Onur Kaplan", "takim": "DevOps", "maas": 43000, "iseGirisYili": 2022 },
+  { "ad": "Merve Doğan", "takim": "QA", "maas": 32000, "iseGirisYili": 2018 },
+  { "ad": "Barış Yılmaz", "takim": "Backend", "maas": 48000, "iseGirisYili": 2021 }
+]
