@@ -8,7 +8,7 @@ function filterByRole<T extends User>(users: T[], role: Role): T[] {
 async function main() {
   try {
     const raw = await readFile("data/users.json", "utf-8");
-    const users = JSON.parse(raw);
+    const users: User[] = JSON.parse(raw);
     const filtrelenmis = filterByRole(users, "developer");
     console.log(filtrelenmis);
   } catch (err) {
