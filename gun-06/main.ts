@@ -98,28 +98,44 @@ async function kaydet(hesaplar: BankaHesabi[]) {
 }
 
 async function yukle(): Promise<BankaHesabi[]> {
-    try{
-  const metin = await readFile(DOSYA_YOLU, "utf-8");
-  const veriler = JSON.parse(metin);
-  return veriler.map((veri: any) => BankaHesabi.fromJSON(veri));
-    }catch(err){
-        throw new KayitDosyasiHatasi("Kayit dosyasi okunamadi: " + (err as Error).message);
-    }
+  let metin: string;
+
+  try {
+    metin = await readFile(DOSYA_YOLU, "utf-8");
+  } catch (err) {
+    // Dosya okunamadı — hiç yok (ilk çalıştırma)
+    throw new KayitDosyasiHatasi("DOSYA_YOK");
+  }
+
+  try {
+    const veriler = JSON.parse(metin);
+    return veriler.map((veri: any) => BankaHesabi.fromJSON(veri));
+  } catch (err) {
+    // Dosya var ama içeriği bozuk JSON
+    throw new KayitDosyasiHatasi("BOZUK_JSON");
+  }
 }
 
 async function main() {
   let hesaplar: BankaHesabi[];
 
   try {
-    hesaplar = await yukle();
-    console.log("Kayitli hesaplar yuklendi.");
-  } catch (err) {
-    console.log("Kayitli hesap bulunamadi, yeni hesaplar olusturuluyor.");
-    hesaplar = [
-      new BankaHesabi("TR001", "Enes Albas", 5000),
-      new BankaHesabi("TR002", "Ayse Yilmaz", 0)
-    ];
+  hesaplar = await yukle();
+  console.log("Kayitli hesaplar yuklendi.");
+} catch (err) {
+  if (err instanceof KayitDosyasiHatasi && err.message === "DOSYA_YOK") {
+    console.log("Kayitli dosya yok, sifirdan baslaniyor.");
+  } else if (err instanceof KayitDosyasiHatasi && err.message === "BOZUK_JSON") {
+    console.error("HATA: Kayit dosyasi bozuk! Icerigi gecerli JSON degil.");
+    console.log("Yeni hesaplarla devam ediliyor (bozuk dosya korunuyor).");
+  } else {
+    console.error("Beklenmeyen hata:", (err as Error).message);
   }
+  hesaplar = [
+    new BankaHesabi("TR001", "Enes Albas", 5000),
+    new BankaHesabi("TR002", "Ayse Yilmaz", 0)
+  ];
+}
 
   const hesap1 = hesaplar[0];
   const hesap2 = hesaplar[1];
