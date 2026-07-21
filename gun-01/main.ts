@@ -1,13 +1,12 @@
 import { readFile } from "fs/promises";
-import { User, Role } from "./types";
-
+import { User, Role } from "./types.js";
 function filterByRole<T extends User>(users: T[], role: Role): T[] {
   return users.filter((user) => user.role === role);
 }
 
 async function main() {
   try {
-    const raw = await readFile("users.json", "utf-8");
+    const raw = await readFile("gun-01/users.json", "utf-8");
     const users: User[] = JSON.parse(raw);
     const filtrelenmis = filterByRole(users, "developer");
     console.log(filtrelenmis);
