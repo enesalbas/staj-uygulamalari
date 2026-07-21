@@ -1,3 +1,7 @@
+import { readFile, writeFile } from "fs/promises";
+
+const DOSYA_YOLU = new URL("hesaplar.json", import.meta.url);
+
 interface Islem {
   tarih: string;
   tur: string;
@@ -18,7 +22,7 @@ class BankaHesabi {
 
   paraYatir(tutar: number) {
     if (tutar <= 0) {
-      throw new Error("Tutar pozitif olmali");
+      throw new GecersizTutarHatasi("Tutar pozitif olmali");
     }
     this.bakiye = this.bakiye + tutar;
     this.islemGecmisi.push({
@@ -30,10 +34,10 @@ class BankaHesabi {
 
   paraCek(tutar: number) {
     if (tutar <= 0) {
-      throw new Error("Tutar pozitif olmali");
+      throw new GecersizTutarHatasi("Tutar pozitif olmali");
     }
     if (tutar > this.bakiye) {
-      throw new Error("Yetersiz bakiye. Mevcut bakiye: " + this.bakiye);
+      throw new YetersizBakiyeHatasi("Yetersiz bakiye. Mevcut bakiye: " + this.bakiye);
     }
     this.bakiye = this.bakiye - tutar;
     this.islemGecmisi.push({
@@ -53,42 +57,107 @@ class BankaHesabi {
     console.log("Bakiye: " + this.bakiye + " TL");
   }
 
-  toJSON(){
-    return{
-    hesapNo : this.hesapNo,
-    sahibi  : this.sahibi,
-    bakiye  : this.bakiye,
-    islemGecmisi: this.islemGecmisi,
-  };}
+  toJSON() {
+    return {
+      hesapNo: this.hesapNo,
+      sahibi: this.sahibi,
+      bakiye: this.bakiye,
+      islemGecmisi: this.islemGecmisi
+    };
+  }
+
+  static fromJSON(veri: any): BankaHesabi {
+    const hesap = new BankaHesabi(veri.hesapNo, veri.sahibi, veri.bakiye);
+    hesap.islemGecmisi = veri.islemGecmisi;
+    return hesap;
+  }
+  
+}
+class YetersizBakiyeHatasi extends Error {
+  constructor(mesaj: string) {
+    super(mesaj);
+    this.name = "Yetersiz Bakiye Hatasi";
+  }
 }
 
-function main() {
-  const hesap1 = new BankaHesabi("TR001", "Enes Albas", 5000);
-  const hesap2 = new BankaHesabi("TR002", "Ayse Yilmaz", 0);
+class GecersizTutarHatasi extends Error{
+    constructor(mesaj:string){
+        super(mesaj);
+        this.name="Gecersiz Tutar Hatasi";
+    }
+}
+class KayitDosyasiHatasi extends Error{
+    constructor(mesaj:string){
+        super(mesaj);
+        this.name="Kayıt Dosyası Hatası";
+    }
+}
+async function kaydet(hesaplar: BankaHesabi[]) {
+  const metin = JSON.stringify(hesaplar, null, 2);
+  await writeFile(DOSYA_YOLU, metin, "utf-8");
+}
+
+async function yukle(): Promise<BankaHesabi[]> {
+    try{
+  const metin = await readFile(DOSYA_YOLU, "utf-8");
+  const veriler = JSON.parse(metin);
+  return veriler.map((veri: any) => BankaHesabi.fromJSON(veri));
+    }catch(err){
+        throw new KayitDosyasiHatasi("Kayit dosyasi okunamadi: " + (err as Error).message);
+    }
+}
+
+async function main() {
+  let hesaplar: BankaHesabi[];
+
+  try {
+    hesaplar = await yukle();
+    console.log("Kayitli hesaplar yuklendi.");
+  } catch (err) {
+    console.log("Kayitli hesap bulunamadi, yeni hesaplar olusturuluyor.");
+    hesaplar = [
+      new BankaHesabi("TR001", "Enes Albas", 5000),
+      new BankaHesabi("TR002", "Ayse Yilmaz", 0)
+    ];
+  }
+
+  const hesap1 = hesaplar[0];
+  const hesap2 = hesaplar[1];
 
   hesap1.paraYatir(1500);
-  hesap1.paraCek(2000);
-  hesap1.paraYatir(300);
-
   hesap2.paraYatir(1000);
-  hesap2.paraCek(250);
 
   hesap1.ekstre();
   hesap2.ekstre();
 
-  console.log("Hatali senaryolar:");
+  await kaydet(hesaplar);
+  console.log("Hesaplar kaydedildi.");
 
-  try {
-    hesap2.paraCek(999999);
-  } catch (err) {
-    console.error("Hata:", (err as Error).message);
-  }
 
-  try {
-    hesap1.paraYatir(-100);
-  } catch (err) {
-    console.error("Hata:", (err as Error).message);
+  console.log("\n--- Hatali senaryolar ---");
+
+try {
+  hesap2.paraCek(999999);
+} catch (err) {
+  if (err instanceof YetersizBakiyeHatasi) {
+    console.error("Bakiye yetersiz:", err.message);
+  } else if (err instanceof GecersizTutarHatasi) {
+    console.error("Gecersiz tutar:", err.message);
+  } else {
+    console.error("Beklenmeyen hata:", (err as Error).message);
   }
 }
 
+try {
+  hesap1.paraYatir(-100);
+} catch (err) {
+  if (err instanceof YetersizBakiyeHatasi) {
+    console.error("Bakiye yetersiz:", err.message);
+  } else if (err instanceof GecersizTutarHatasi) {
+    console.error("Gecersiz tutar:", err.message);
+  } else {
+    console.error("Beklenmeyen hata:", (err as Error).message);
+  }
+}
+}
 main();
