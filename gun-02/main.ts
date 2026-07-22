@@ -1,5 +1,7 @@
 import { readFile } from "fs/promises";
 
+const DOSYA_YOLU = new URL("calisanlar.json", import.meta.url);
+
 interface Calisan {
   ad: string;
   takim: string;
@@ -9,7 +11,7 @@ interface Calisan {
 
 async function main() {
   try {
-    const raw = await readFile("calisanlar.json", "utf-8");
+    const raw = await readFile(DOSYA_YOLU, "utf-8");
     const calisanlar: Calisan[] = JSON.parse(raw);
 
     const hedefTakim = "Backend";
@@ -22,11 +24,14 @@ async function main() {
     console.log(adListesi);
 
     const toplamMaas = calisanlar.reduce((toplam, c) => toplam + c.maas, 0);
-    const ortalamaMaas = toplamMaas / calisanlar.length;
-    const enYuksekMaasli = calisanlar.reduce((en, c) => (c.maas > en.maas ? c : en));
+    const ortalamaMaas = calisanlar.length > 0 ? toplamMaas / calisanlar.length : 0;
+    const enYuksekMaasli = calisanlar.reduce<Calisan | null>(
+      (en, c) => (en === null || c.maas > en.maas ? c : en),
+      null
+    );
 
     console.log("Ortalama maas:", ortalamaMaas);
-    console.log("En yuksek maasli calisan:", enYuksekMaasli);
+    console.log("En yuksek maasli calisan:", enYuksekMaasli ?? "kayit yok");
 
     const takimSayilari = calisanlar.reduce((grup: Record<string, number>, c) => {
       grup[c.takim] = (grup[c.takim] ?? 0) + 1;

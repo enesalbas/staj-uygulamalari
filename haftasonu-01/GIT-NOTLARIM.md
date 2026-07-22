@@ -53,3 +53,27 @@ almam, sonra `git commit` ile kalici hale getirmem gerekiyor.
 Faydasi su: ayni anda cok dosyada degisiklik yapsam bile, sadece istedigimi `git add` ile
 secip commit'leyebiliyorum, gerisini sonraya birakabiliyorum. Boylece her commit'im duzenli
 oluyor.
+
+
+# Learn Git Branching — Giris Dizisi
+
+[Learn Git Branching](https://learngitbranching.js.org/?locale=tr_TR) sitesindeki "Giris" dizisinin
+4 seviyesini de tamamladim:
+
+1. **Git Commit'e Giris** — commit'lerin bir zincir olusturdugunu, her commit'in bir oncekini isaret ettigini gordum
+2. **Git'te Dallanma** — dalin aslinda bir commit'e isaret eden hafif bir etiket oldugunu ogrendim
+3. **Git'te Birlestirme (merge)** — iki dali birlestiren ve iki ebeveyni olan yeni bir commit olusturuluyor
+4. **Rebase'e Giris** — commit'leri baska bir dalin ucuna tasiyip duz bir gecmis elde ediliyor
+
+Ekran goruntusunde "Giris bolumu" altindaki dort yildiz da dolu:
+
+![Learn Git Branching giris bolumu, dort seviye de tamamlanmis](git-commit-giris.png)
+
+## merge ile rebase farki
+
+Ikisi de degisiklikleri birlestiriyor ama gecmisi farkli birakiyorlar:
+
+- **merge** gecmisi oldugu gibi birakir, birlesme yerinde iki ebeveynli bir commit olusur. Gecmis dallanmis
+  gorunur ama gercekte ne olduysa o durur.
+- **rebase** commit'leri hedef dalin ucuna yeniden yazar, gecmis duz bir cizgi olur. Okumasi daha kolay ama
+  commit'ler yeniden yazildigi icin baskasiyla paylastigim dalda kullanmamam gerekiyormus.

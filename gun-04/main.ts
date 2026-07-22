@@ -5,22 +5,26 @@ interface Islem {
 }
 
 class BankaHesabi {
-  hesapNo: string;
-  sahibi: string;
-  private bakiye: number;
+  readonly hesapNo: string;
+  readonly sahibi: string;
+  private _bakiye: number;
   private islemGecmisi: Islem[] = [];
 
   constructor(hesapNo: string, sahibi: string, baslangicBakiyesi: number) {
     this.hesapNo = hesapNo;
     this.sahibi = sahibi;
-    this.bakiye = baslangicBakiyesi;
+    this._bakiye = baslangicBakiyesi;
   }
 
-  paraYatir(tutar: number) {
+  get bakiye(): number {
+    return this._bakiye;
+  }
+
+  paraYatir(tutar: number): void {
     if (tutar <= 0) {
       throw new Error("Tutar pozitif olmali");
     }
-    this.bakiye = this.bakiye + tutar;
+    this._bakiye = this._bakiye + tutar;
     this.islemGecmisi.push({
       tarih: new Date().toISOString(),
       tur: "yatirma",
@@ -28,14 +32,14 @@ class BankaHesabi {
     });
   }
 
-  paraCek(tutar: number) {
+  paraCek(tutar: number): void {
     if (tutar <= 0) {
       throw new Error("Tutar pozitif olmali");
     }
-    if (tutar > this.bakiye) {
-      throw new Error("Yetersiz bakiye. Mevcut bakiye: " + this.bakiye);
+    if (tutar > this._bakiye) {
+      throw new Error("Yetersiz bakiye. Mevcut bakiye: " + this._bakiye);
     }
-    this.bakiye = this.bakiye - tutar;
+    this._bakiye = this._bakiye - tutar;
     this.islemGecmisi.push({
       tarih: new Date().toISOString(),
       tur: "cekme",
@@ -43,18 +47,14 @@ class BankaHesabi {
     });
   }
 
-  bakiyeGoster() {
-    return this.bakiye;
-  }
-
-  ekstre() {
+  ekstre(): void {
     console.log(this.hesapNo + " - " + this.sahibi + " ekstresi:");
     console.table(this.islemGecmisi);
-    console.log("Bakiye: " + this.bakiye + " TL");
+    console.log("Bakiye: " + this._bakiye + " TL");
   }
 }
 
-function main() {
+function main(): void {
   const hesap1 = new BankaHesabi("TR001", "Enes Albas", 5000);
   const hesap2 = new BankaHesabi("TR002", "Ayse Yilmaz", 0);
 

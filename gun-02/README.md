@@ -16,10 +16,14 @@ Staj Gün 2 ödevi. Koleksiyon metodlarıyla (map, filter, reduce) veri işleme 
 
 ## Kurulum ve Çalıştırma
 
+Proje kökünden:
+
 ```bash
 npm install
-npx ts-node main.ts
+npm run start gun-02/main.ts
 ```
+
+Dosya yolunu gün 1'deki gibi `new URL("calisanlar.json", import.meta.url)` ile çözüyorum.
 
 ## Öğrenilen Kavramlar
 
@@ -28,3 +32,13 @@ npx ts-node main.ts
 - **reduce**: bir diziyi tek bir değere (toplam, obje, en büyük eleman vb.) indirgemek
 - **sort**: bir diziyi karşılaştırma fonksiyonuna göre sıralamak
 - Bu metodların hepsi, elle `for`/`while` döngüsü yazmadan veri işlemeyi sağlar (bildirimsel/declarative yaklaşım)
+
+## Boş dizi durumu
+
+Kodu yazarken verinin hep dolu geleceğini varsaymışım. İki yeri düzelttim:
+
+- Ortalama hesabında boş dizide `toplam / 0` yapılıyor ve `NaN` çıkıyor. Artık `length` kontrolü var.
+- En yüksek maaşlıyı bulan `reduce`'a başlangıç değeri vermemiştim. Boş dizide `TypeError` fırlatıyor.
+  Başlangıç değerini `null` verdim, dönüş tipi `Calisan | null` oldu.
+
+Kural olarak `reduce`'a hep başlangıç değeri vermem gerekiyormuş.
