@@ -211,7 +211,7 @@ async function main() {
 
   if (kaydedebilir) {
     await kaydet(hesaplar);
-    console.log("Hesaplar kaydedildi.");
+    console.log("Hesaplar basariyla kaydedildi.");
   } else {
     console.log("Bozuk dosyanin uzerine yazmamak icin kayit atlandi.");
   }
