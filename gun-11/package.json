@@ -10,13 +10,14 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Staj Gun 11 odevi. Gun 9'da tablolari elle SQL yazarak olusturmustum. Bu odevde ayni uc tabloyu (developers, merge_requests, commits) Drizzle ORM ile TypeScript kodu olarak tanimladim, migration urettim ve seed programiyla doldurdum.",
   "dependencies": {
-    "better-sqlite3": "^13.0.1",
+    "better-sqlite3": "^13.0.2",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "drizzle-kit": "^0.31.10"
-  }
+  },
+  "type": "commonjs"
 }
