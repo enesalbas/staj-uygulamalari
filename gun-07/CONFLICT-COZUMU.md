@@ -99,4 +99,4 @@ Cikti:
 - Cozdukten sonra `git add` + `git commit` ile merge'i tamamlamak sart, yoksa merge yarim kaliyor
 - VS Code conflict'leri renkli gosterip tek tiklik secim butonlari sunuyor, bu isi kolaylastiriyor
 
-Merge ederken yaptığım PR linki : https://github.com/enesalbas/staj-uygulamalari/pulls?q=is%3Apr+is%3Aclosed
+Merge ederken yaptığım PR linki : https://github.com/enesalbas/staj-uygulamalari/pull/1

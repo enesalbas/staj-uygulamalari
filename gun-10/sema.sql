@@ -1,3 +1,8 @@
+-- SQLite'ta foreign key kontrolu varsayilan olarak KAPALI.
+-- Her baglantida ayri ayri acilmasi gerekiyor, yoksa FOREIGN KEY tanimlari
+-- sadece belge niteliginde kalir, hicbir seyi engellemez.
+PRAGMA foreign_keys = ON;
+
 -- Üyeler Tablosu
 CREATE TABLE Uyeler (
     uye_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,3 +35,7 @@ CREATE TABLE OduncIslemleri (
     -- Sisteme kayıtlı olmayan bir kişiye (olmayan uye_id) kitap verilmesini engeller.
     FOREIGN KEY (uye_id) REFERENCES Uyeler(uye_id)
 );
+
+-- iade_tarihi uzerinde index: "disaridaki kitaplar" sorgusu bu sutunu filtreliyor.
+-- Index olmadan tum tablo taraniyor (SCAN), index ile dogrudan hedefe gidiliyor (SEARCH).
+CREATE INDEX idx_iade_tarihi ON OduncIslemleri(iade_tarihi);

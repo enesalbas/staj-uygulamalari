@@ -22,7 +22,7 @@ Staj Gun 11 odevi. Gun 9'da tablolari elle SQL yazarak olusturmustum. Bu odevde 
 npm install
 npm run db:generate   # semadan SQL migration uret
 npm run db:migrate    # migration'i veritabanina uygula
-npx tsx seed.ts       # veritabanini doldur
+npm run seed          # veritabanini doldur
 ```
 
 ## Migration Nedir?

@@ -14,8 +14,8 @@ Staj Gun 12 odevi. Gun 9'da elle SQL ile yazdigim bes analiz sorgusunu bu sefer 
 ```bash
 npm install
 npm run db:migrate
-npx tsx seed.ts
-npx tsx analiz.ts
+npm run seed
+npm run analiz
 ```
 
 ## SQL Anahtar Kelimelerinin ORM Karsiliklari
