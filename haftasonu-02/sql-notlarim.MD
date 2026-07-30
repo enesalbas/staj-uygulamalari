@@ -126,3 +126,5 @@ Once WHERE tek tek satirlari suzuyor (email'i olmayanlar atiliyor), sonra kalanl
 - **GROUP BY**: ayni degerdeki satirlari grupla, her grup icin ayri hesap yap
 - **INNER JOIN**: sadece eslesenler; **LEFT JOIN**: sol tablonun tamami, eslesmeyende NULL
 - **WHERE**: gruplamadan once satirlari filtrele; **HAVING**: gruplamadan sonra gruplari filtrele
+
+![SQLBolt tamamlandi](sql-bolt.png)

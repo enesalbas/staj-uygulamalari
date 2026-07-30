@@ -18,9 +18,9 @@ const commitSayilari = db
     isim: developers.name,
     commitSayisi: count(commits.id),
   })
-  .from(commits)
-  .innerJoin(developers, eq(commits.developerId, developers.id))
-  .groupBy(developers.name)
+  .from(developers)
+  .leftJoin(commits, eq(developers.id, commits.developerId))
+  .groupBy(developers.id, developers.name)
   .orderBy(desc(count(commits.id)))
   .all();
 
@@ -54,7 +54,7 @@ const ilkBes = db
   })
   .from(commits)
   .innerJoin(developers, eq(commits.developerId, developers.id))
-  .groupBy(developers.name)
+  .groupBy(developers.id, developers.name)
   .orderBy(desc(count(commits.id)))
   .limit(5)
   .all();

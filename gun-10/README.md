@@ -4,7 +4,7 @@ Staj Gun 10 odevi. Gercek dunyadaki bir problemi (kütüphane işleyişi) tablol
 
 ## Neler Var
 
-- **cizim.jpg**: Veritabani tablolarinin ve iliskilerinin kagit uzerindeki ER diyagrami tasarimi
+- **sqltablo_cizim.jpeg**: Veritabani tablolarinin ve iliskilerinin kagit uzerindeki ER diyagrami tasarimi
 - **sema.sql**: CREATE TABLE komutlari ve veri tutarliligini saglayan NOT NULL, UNIQUE, FOREIGN KEY kisitlari
 - **sorgular.sql**: Ornek veriler ve istenen 3 temel analiz sorgusu
 - **README.md**: Projenin dokumantasyonu ve index analiz raporu
@@ -29,7 +29,7 @@ Bir uye birden fazla kitap odunc alabilir, bir kitap da farkli zamanlarda birden
 
 ```bash
 cd gun-10
-sqlite3 kutuphane.db
+sqlite3 db.kutuphane
 ```
 
 SQLite prompt'unda:
@@ -79,3 +79,5 @@ Artik veritabani, kitabin "icindekiler" kismina bakar gibi hedefini dogrudan bul
 - **Index**: Surekli Where kosulunda aranan bir sutun uzerinde ozel bir okuma agaci olusturarak sorgu hizini artirma
 - **EXPLAIN QUERY PLAN**: Yazilan SQL sorgusunun arka planda nasil (SCAN, SEARCH) bir yolla ve maliyetle calisacagini gosteren profil komutu
 - **NOT IN ve Alt Sorgular (Subqueries)**: Bir tablodaki kaydin id'sinin, baska bir tablonun id listesi icinde (SELECT) gecip gecmedigini test etme mantigi
+
+![Kutuphane ER diyagrami](sqltablo_cizim.jpeg)

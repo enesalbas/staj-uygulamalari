@@ -2,44 +2,15 @@
 -- Gun 9: Cok Tablolu Analiz
 -- =====================================================
 
--- Tablo yapilari
--- merge_requests: her MR bir gelistiriciye ait (developer_id -> developers.id)
--- commits: her commit hem bir gelistiriciye hem bir MR'a ait
-CREATE TABLE merge_requests (
-  id INTEGER PRIMARY KEY,
-  title TEXT NOT NULL,
-  developer_id INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
-  merged_at TEXT,
-  status TEXT NOT NULL,
-  FOREIGN KEY (developer_id) REFERENCES developers(id)
-);
-
-CREATE TABLE commits (
-  id INTEGER PRIMARY KEY,
-  message TEXT NOT NULL,
-  developer_id INTEGER NOT NULL,
-  merge_request_id INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY (developer_id) REFERENCES developers(id),
-  FOREIGN KEY (merge_request_id) REFERENCES merge_requests(id)
-);
-
--- Hic commit'i olmayan gelistirici senaryosunu test edebilmek icin
--- MR/commit uretiminde kullanilmayan iki gelistirici eklendi
-INSERT INTO developers (name, email, team) VALUES
-  ('Yeni Gelistirici', 'yeni@example.com', 'Backend'),
-  ('Stajyer Aday', NULL, 'QA');
-
-
 -- 1. Her gelistiricinin toplam commit sayisi (azalan sirada)
--- JOIN ile commits ve developers birlestiriliyor, cunku commits tablosunda
--- sadece developer_id var, isim developers tablosunda duruyor.
--- GROUP BY ile her gelistirici ayri bir grup oluyor, COUNT(*) her grubu ayri sayiyor.
-SELECT developers.name, COUNT(*) AS commit_sayisi
-FROM commits
-JOIN developers ON commits.developer_id = developers.id
-GROUP BY developers.name
+-- developers'tan LEFT JOIN yapiyorum ki hic commit'i olmayanlar da 0 ile gorunsun.
+-- COUNT(*) degil COUNT(commits.id) kullaniyorum: COUNT(*) satirlari sayar ve
+-- LEFT JOIN'de eslesmeyen satir da bir satir oldugu icin 0 yerine 1 verirdi.
+-- GROUP BY developers.id: isme gore gruplasam ayni isimli iki kisi tek satirda birlesirdi.
+SELECT developers.name, COUNT(commits.id) AS commit_sayisi
+FROM developers
+LEFT JOIN commits ON developers.id = commits.developer_id
+GROUP BY developers.id, developers.name
 ORDER BY commit_sayisi DESC;
 
 
@@ -58,7 +29,7 @@ WHERE created_at >= date('now', '-30 days')
 SELECT developers.name, COUNT(*) AS commit_sayisi
 FROM commits
 JOIN developers ON commits.developer_id = developers.id
-GROUP BY developers.name
+GROUP BY developers.id, developers.name
 ORDER BY commit_sayisi DESC
 LIMIT 5;
 

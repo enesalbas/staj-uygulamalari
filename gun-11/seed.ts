@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { developers, mergeRequests, commits } from "./schema.js";
 
 const sqlite = new Database("staj.db");
+sqlite.pragma("foreign_keys = ON");
 const db = drizzle(sqlite);
 
 // Onceki veriyi temizle (seed tekrar calisirsa cift veri olmasin)
@@ -76,7 +77,7 @@ for (let mrId = 1; mrId <= MR_SAYISI; mrId++) {
     status: durum,
   });
 
-  const commitSayisi = rastgeleSayi(2, 6);
+  const commitSayisi = rastgeleSayi(4, 8);
   for (let i = 0; i < commitSayisi; i++) {
     commitVerileri.push({
       id: commitId,
