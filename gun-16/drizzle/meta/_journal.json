@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1785842415042,
+      "tag": "0000_open_bastion",
+      "breakpoints": true
+    }
+  ]
+}
