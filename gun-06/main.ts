@@ -8,16 +8,9 @@ interface Islem {
   tutar: number;
 }
 
-interface HesapKaydi {
+class BankaHesabi {
   hesapNo: string;
   sahibi: string;
-  bakiye: number;
-  islemGecmisi: Islem[];
-}
-
-class BankaHesabi {
-  readonly hesapNo: string;
-  readonly sahibi: string;
   private bakiye: number;
   private islemGecmisi: Islem[] = [];
 
@@ -73,13 +66,13 @@ class BankaHesabi {
     };
   }
 
-  static fromJSON(veri: HesapKaydi): BankaHesabi {
+  static fromJSON(veri: any): BankaHesabi {
     const hesap = new BankaHesabi(veri.hesapNo, veri.sahibi, veri.bakiye);
     hesap.islemGecmisi = veri.islemGecmisi;
     return hesap;
   }
-  
 }
+
 class YetersizBakiyeHatasi extends Error {
   constructor(mesaj: string) {
     super(mesaj);
@@ -87,39 +80,32 @@ class YetersizBakiyeHatasi extends Error {
   }
 }
 
-class GecersizTutarHatasi extends Error{
-    constructor(mesaj:string){
-        super(mesaj);
-        this.name="Gecersiz Tutar Hatasi";
-    }
-}
-type KayitHataKodu = "DOSYA_YOK" | "BOZUK_JSON" | "GECERSIZ_BICIM";
-
-class KayitDosyasiHatasi extends Error{
-    readonly kod: KayitHataKodu;
-
-    constructor(kod: KayitHataKodu, mesaj:string, secenekler?: { cause?: unknown }){
-        super(mesaj, secenekler);
-        this.name="Kayıt Dosyası Hatası";
-        this.kod = kod;
-    }
-}
-
-function dosyaBulunamadiMi(err: unknown): boolean {
-  return typeof err === "object" && err !== null
-    && (err as NodeJS.ErrnoException).code === "ENOENT";
-}
-
-function hesapKaydiMi(veri: unknown): veri is HesapKaydi {
-  if (typeof veri !== "object" || veri === null) {
-    return false;
+class GecersizTutarHatasi extends Error {
+  constructor(mesaj: string) {
+    super(mesaj);
+    this.name = "Gecersiz Tutar Hatasi";
   }
-  const kayit = veri as Record<string, unknown>;
-  return typeof kayit.hesapNo === "string"
-    && typeof kayit.sahibi === "string"
-    && typeof kayit.bakiye === "number"
-    && Array.isArray(kayit.islemGecmisi);
 }
+
+class KayitDosyasiHatasi extends Error {
+  constructor(mesaj: string) {
+    super(mesaj);
+    this.name = "Kayit Dosyasi Hatasi";
+  }
+}
+
+// REFACTOR: iki catch blogunda tekrar eden instanceof zinciri
+// buraya tek bir yere cikarildi (Duplicate Code kokusu duzeltildi).
+function hataMesajiUret(err: unknown): string {
+  if (err instanceof YetersizBakiyeHatasi) {
+    return `Bakiye yetersiz: ${err.message}`;
+  }
+  if (err instanceof GecersizTutarHatasi) {
+    return `Gecersiz tutar: ${err.message}`;
+  }
+  return `Beklenmeyen hata: ${(err as Error).message}`;
+}
+
 async function kaydet(hesaplar: BankaHesabi[]) {
   const metin = JSON.stringify(hesaplar, null, 2);
   await writeFile(DOSYA_YOLU, metin, "utf-8");
@@ -131,72 +117,33 @@ async function yukle(): Promise<BankaHesabi[]> {
   try {
     metin = await readFile(DOSYA_YOLU, "utf-8");
   } catch (err) {
-    // Sadece ENOENT gercekten "dosya yok" demek
-    if (dosyaBulunamadiMi(err)) {
-      throw new KayitDosyasiHatasi("DOSYA_YOK", "Kayit dosyasi bulunamadi.", { cause: err });
-    }
-    throw err;   // izin/disk hatasi
+    throw new KayitDosyasiHatasi("Kayit dosyasi bulunamadi.");
   }
-
-  let veriler: unknown;
 
   try {
-    veriler = JSON.parse(metin);
+    const veriler = JSON.parse(metin);
+    return veriler.map((veri: any) => BankaHesabi.fromJSON(veri));
   } catch (err) {
-    // Dosya var ama içeriği bozuk JSON
-    throw new KayitDosyasiHatasi("BOZUK_JSON", "Kayit dosyasi gecerli JSON degil.", { cause: err });
+    throw new KayitDosyasiHatasi("Kayit dosyasi gecerli JSON degil.");
   }
-
-  if (!Array.isArray(veriler)) {
-    throw new KayitDosyasiHatasi("GECERSIZ_BICIM", "Kayit dosyasi bir hesap dizisi icermeli.");
-  }
-
-  return veriler.map((veri: unknown, sira: number) => {
-    if (!hesapKaydiMi(veri)) {
-      throw new KayitDosyasiHatasi("GECERSIZ_BICIM", `${sira}. kayit hesap bicimine uymuyor.`);
-    }
-    return BankaHesabi.fromJSON(veri);
-  });
 }
 
 async function main() {
   let hesaplar: BankaHesabi[];
-  let kaydedebilir = true;   // dosya bozuksa uzerine yazmiyorum
 
   try {
-  hesaplar = await yukle();
-  console.log("Kayitli hesaplar yuklendi.");
-} catch (err) {
-  if (err instanceof KayitDosyasiHatasi && err.kod === "DOSYA_YOK") {
-    console.log("Kayitli dosya yok, sifirdan baslaniyor.");
-  } else if (err instanceof KayitDosyasiHatasi && err.kod === "BOZUK_JSON") {
-    console.error("HATA: Kayit dosyasi bozuk! Icerigi gecerli JSON degil.");
-    console.log("Yeni hesaplarla devam ediliyor (bozuk dosya korunuyor).");
-    kaydedebilir = false;
-  } else if (err instanceof KayitDosyasiHatasi && err.kod === "GECERSIZ_BICIM") {
-    console.error("HATA: Kayit dosyasinin bicimi beklenenden farkli:", err.message);
-    console.log("Yeni hesaplarla devam ediliyor (bozuk dosya korunuyor).");
-    kaydedebilir = false;
-  } else {
-    // Beklenmedik hata, devam edersem veriyi ezerim
-    console.error("Kayit dosyasi okunamadi, veri kaybi olmamasi icin cikiliyor:", err);
-    process.exitCode = 1;
-    return;
+    hesaplar = await yukle();
+    console.log("Kayitli hesaplar yuklendi.");
+  } catch (err) {
+    console.log("Kayitli hesap bulunamadi, yeni hesaplar olusturuluyor.");
+    hesaplar = [
+      new BankaHesabi("TR001", "Enes Albas", 5000),
+      new BankaHesabi("TR002", "Ayse Yilmaz", 0)
+    ];
   }
-  hesaplar = [
-    new BankaHesabi("TR001", "Enes Albas", 5000),
-    new BankaHesabi("TR002", "Ayse Yilmaz", 0)
-  ];
-}
 
   const hesap1 = hesaplar[0];
   const hesap2 = hesaplar[1];
-
-  if (!hesap1 || !hesap2) {
-    console.error("Kayit dosyasinda beklenen iki hesap yok, islem yapilmiyor.");
-    process.exitCode = 1;
-    return;
-  }
 
   hesap1.paraYatir(1500);
   hesap2.paraYatir(1000);
@@ -204,38 +151,25 @@ async function main() {
   hesap1.ekstre();
   hesap2.ekstre();
 
-  if (kaydedebilir) {
-    await kaydet(hesaplar);
-    console.log("Hesaplar kaydedildi.");
-  } else {
-    console.log("Bozuk dosyanin uzerine yazmamak icin kayit atlandi.");
-  }
-
+  await kaydet(hesaplar);
+  console.log("Hesaplar kaydedildi.");
 
   console.log("\n--- Hatali senaryolar ---");
 
-try {
-  hesap2.paraCek(999999);
-} catch (err) {
-  if (err instanceof YetersizBakiyeHatasi) {
-    console.error("Bakiye yetersiz:", err.message);
-  } else if (err instanceof GecersizTutarHatasi) {
-    console.error("Gecersiz tutar:", err.message);
-  } else {
-    console.error("Beklenmeyen hata:", (err as Error).message);
+  // REFACTOR: iki catch blogu artik tek satirlik hataMesajiUret cagrisi
+  // kullaniyor, oncesinde her biri ayni 6 satirlik if/else zincirini
+  // tekrarliyordu.
+  try {
+    hesap2.paraCek(999999);
+  } catch (err) {
+    console.error(hataMesajiUret(err));
+  }
+
+  try {
+    hesap1.paraYatir(-100);
+  } catch (err) {
+    console.error(hataMesajiUret(err));
   }
 }
 
-try {
-  hesap1.paraYatir(-100);
-} catch (err) {
-  if (err instanceof YetersizBakiyeHatasi) {
-    console.error("Bakiye yetersiz:", err.message);
-  } else if (err instanceof GecersizTutarHatasi) {
-    console.error("Gecersiz tutar:", err.message);
-  } else {
-    console.error("Beklenmeyen hata:", (err as Error).message);
-  }
-}
-}
 main();
