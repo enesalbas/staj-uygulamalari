@@ -2,7 +2,7 @@
   {
     "hesapNo": "TR001",
     "sahibi": "Enes Albas",
-    "bakiye": 9500,
+    "bakiye": 11000,
     "islemGecmisi": [
       {
         "tarih": "2026-07-21T08:04:22.305Z",
@@ -18,13 +18,18 @@
         "tarih": "2026-07-21T10:47:53.778Z",
         "tur": "yatirma",
         "tutar": 1500
+      },
+      {
+        "tarih": "2026-08-09T11:25:12.694Z",
+        "tur": "yatirma",
+        "tutar": 1500
       }
     ]
   },
   {
     "hesapNo": "TR002",
     "sahibi": "Ayse Yilmaz",
-    "bakiye": 3000,
+    "bakiye": 4000,
     "islemGecmisi": [
       {
         "tarih": "2026-07-21T08:04:22.307Z",
@@ -38,6 +43,11 @@
       },
       {
         "tarih": "2026-07-21T10:47:53.779Z",
+        "tur": "yatirma",
+        "tutar": 1000
+      },
+      {
+        "tarih": "2026-08-09T11:25:12.695Z",
         "tur": "yatirma",
         "tutar": 1000
       }
