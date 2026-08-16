@@ -3,6 +3,7 @@ import { logger } from "../logging/logger.js";
 import { Semafor } from "../api/semafor.js";
 import { tumRepolariCek } from "../api/github-client.js";
 import { repolariDogrula, repoyaDonustur } from "../validation/github-repo.js";
+import { db } from "../db/client.js";
 import { reposuKaydet } from "../db/repository.js";
 
 const ESZAMANLILIK_LIMITI = 3;
@@ -24,7 +25,10 @@ async function tekOrgSenkronizeEt(org: string): Promise<void> {
   hatalar.forEach((h) => logger.warn("Kayit elendi", { org, index: h.index, sebep: h.sebep }));
 
   const donusturulmus = gecerliler.map(repoyaDonustur);
-  reposuKaydet(donusturulmus);
+  // db burada disaridan (client.ts'ten) aliniyor ve reposuKaydet'e parametre olarak
+  // geciliyor. reposuKaydet artik hangi veritabanini kullanacagini disaridan aliyor,
+  // bu sayede testte gercek db yerine bellekteki (:memory:) bir db verilebiliyor.
+  reposuKaydet(db, donusturulmus);
   logger.info("Kayit tamamlandi", { org, yazilan: donusturulmus.length });
 }
 

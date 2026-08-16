@@ -59,17 +59,32 @@ Tek bir kullaniciyi (id=1, Leanne Graham) dondurdu, dizi degil dogrudan obje ola
 ### 3. Olmayan id isteme
 
 ```bash
-curl https://jsonplaceholder.typicode.com/users/999
+curl -i https://jsonplaceholder.typicode.com/users/999
 ```
 
-Cikti: `{}` (bos obje).
+Cikti:
 
-Beklentim 404 gormekti ama JSONPlaceholder'da GET ile olmayan bir kaydi istemek 404
-DONDURMUYOR, bos bir obje ile 200 donuyor. Bu, JSONPlaceholder'in bir ozelligi/kisitliligi;
-gercek API'lerin (ornegin Gun 14'te kullandigim GitHub API'si) cogu olmayan bir kaynak
-icin gercekten 404 dondurur. Bu farki gorunce sunun onemini anladim: bir API'nin "basarisiz"
-oldugunu anlamak icin sadece govdeye degil, durum koduna (status code) bakmak gerekiyor -
-govde bos/farkli gorunse de kod hep kontrol edilmeli.
+```
+HTTP/2 404
+content-type: application/json; charset=utf-8
+content-length: 2
+...
+
+{}
+```
+
+**Durum kodu 404, govde `{}` (bos obje).**
+
+Ilk denememde sadece `curl` (header'siz) kullanmistim, gövdenin `{}` oldugunu görüp
+"200 donuyor, JSONPlaceholder olmayan bir kaydi 404 ile degil bos govdeyle temsil
+ediyor" diye yanlis bir sonuca varmistim. `curl -i` ile tekrar denedigimde durum
+kodunun aslinda **404** oldugunu gordum - JSONPlaceholder tam da beklenen sekilde
+davraniyormus.
+
+Hatamin sebebi su: govdeye bakip durum kodu hakkinda hukum verdim, durum kodunun
+kendisine hic bakmadim. Bu, asagida yazdigim "govde bos/farkli gorunse de kod hep
+kontrol edilmeli" ilkesinin tam tersini yapmak oluyordu - dogru bir ilkeyi yanlis
+uygulayarak yanlis bir sonuca vardim.
 
 ### 4. Response header'larini inceleme
 
@@ -101,10 +116,18 @@ x-ratelimit-reset: 1785428256
 
 ## Ogrendigim En Onemli Sey
 
-JSONPlaceholder'in "/users/999" icin bos obje + 200 donmesi beni sasirtti, cunku Gun 13 ve
-Gun 14'te hep "basarisiz istek = hata kodu" varsayimiyla calismistim. Bu deneme gosterdi ki
-bu varsayim her API icin gecerli degil; bazi sahte/basit API'ler hata durumunu farkli
-temsil edebiliyor. Gercek bir API (GitHub gibi) ile calisirken durum kodunu kontrol etmek
-sartti ve dogruydu, ama JSONPlaceholder gibi bir API ile calisirken de govdenin icerigini
-kontrol etmek gerekebilecegini ogrendim - yani "basarili mi?" sorusunun cevabi API'den
-API'ye degisebiliyor, tek bir kurala guvenmemek gerekiyor.
+Asil ogrendigim sey, ilk yazdigim halinden farkli cikti. JSONPlaceholder'in "/users/999"
+icin davranisi aslinda **beklendigi gibi**: 404 donuyor, govdesi bos bir obje. Benim
+ilk vardigim "bazi API'ler hata durumunu farkli temsil ediyor" sonucu yanlisti.
+
+Yanlisin sebebi ogretici: `curl` (header'siz) sadece govdeyi gosteriyor, durum kodunu
+gostermiyor. `{}` gorup dogrudan "200 donuyor" varsaydim, kontrol etmedim. Oysa ayni
+notun 4. bolumunde `curl -i` kullanip durum kodunu goruyordum - 3. denemede de ayni
+seyi yapsaydim hatayi hic yapmazdim.
+
+Isin ironik tarafi su: vardigim yanlis sonucun kendisi bile "govde bos/farkli gorunse
+de kod hep kontrol edilmeli" diye dogru bir ilkeye isaret ediyordu - ama o ilkeyi tam
+da o deneyi yaparken uygulamamistim. Yani bir ilkeyi bilmek ile onu her seferinde
+uygulamak farkli seyler. Bu durumu duzelttikten sonra, artik her API denemesinde
+govdeye degil, once durum koduna (`curl -i` ya da esdegeri) bakma aliskanligini
+pekistirdim.
