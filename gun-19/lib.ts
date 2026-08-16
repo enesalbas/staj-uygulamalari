@@ -36,7 +36,7 @@ export async function apiGet(url: string, yenidenDenendi = false): Promise<Respo
     headers: {
       Authorization: `Bearer ${config.GITHUB_TOKEN}`,
       Accept: "application/vnd.github+json",
-      "User-Agent": "staj-gun-18",
+      "User-Agent": "staj-gun-19",
     },
   });
 

@@ -7,7 +7,7 @@ Staj Gun 11 odevi. Gun 9'da tablolari elle SQL yazarak olusturmustum. Bu odevde 
 - **schema.ts**: uc tablonun Drizzle ile TypeScript olarak tanimi (FK iliskileri dahil)
 - **drizzle.config.ts**: Drizzle Kit ayarlari (dialect, sema yolu, cikti klasoru, db yolu)
 - **drizzle/**: Drizzle Kit'in urettigi SQL migration dosyalari (surum kontrolunde tutuluyor)
-- **seed.ts**: ORM uzerinden 12 developer, 30 MR, ~110 commit ekleyen program
+- **seed.ts**: ORM uzerinden 12 developer, 30 MR, 120-240 arasi commit ekleyen program
 - **staj.db**: seed sonrasi olusan veritabani (git'e eklenmiyor, seed'den tekrar uretilebilir)
 
 ## Kullanilan Araclar

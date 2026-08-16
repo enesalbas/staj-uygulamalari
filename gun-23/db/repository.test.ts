@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { sql } from "drizzle-orm";
 import { repos } from "./schema.js";
 import { kosullariOlustur } from "./query-builder.js";
+import { reposuKaydet, reposuListele } from "./repository.js";
 
 function testVeritabaniKur() {
   const sqlite = new Database(":memory:");
@@ -20,23 +20,6 @@ function testVeritabaniKur() {
   return drizzle(sqlite);
 }
 
-function upsert(testDb: ReturnType<typeof testVeritabaniKur>, repo: typeof repos.$inferInsert) {
-  testDb
-    .insert(repos)
-    .values(repo)
-    .onConflictDoUpdate({
-      target: repos.id,
-      set: {
-        name: sql`excluded.name`,
-        language: sql`excluded.language`,
-        stars: sql`excluded.stars`,
-        url: sql`excluded.url`,
-        fetchedAt: sql`excluded.fetched_at`,
-      },
-    })
-    .run();
-}
-
 describe("filtre mantigi (kosullariOlustur)", () => {
   const ornekRepolar = [
     { id: 1, name: "repo-ts-yuksek", language: "TypeScript", stars: 500, url: "x", fetchedAt: "t" },
@@ -46,71 +29,54 @@ describe("filtre mantigi (kosullariOlustur)", () => {
 
   it("filtresiz tum repolari donmeli", () => {
     const testDb = testVeritabaniKur();
-    ornekRepolar.forEach((r) => upsert(testDb, r));
-    const kosul = kosullariOlustur({});
-    const sonuc = kosul
-      ? testDb.select().from(repos).where(kosul).all()
-      : testDb.select().from(repos).all();
-    expect(sonuc).toHaveLength(3);
+    reposuKaydet(testDb, ornekRepolar);
+    expect(reposuListele(testDb, {})).toHaveLength(3);
   });
 
   it("--language ile sadece o dildeki repolari suzmeli", () => {
     const testDb = testVeritabaniKur();
-    ornekRepolar.forEach((r) => upsert(testDb, r));
-    const kosul = kosullariOlustur({ language: "TypeScript" });
-    const sonuc = testDb.select().from(repos).where(kosul!).all();
+    reposuKaydet(testDb, ornekRepolar);
+    const sonuc = reposuListele(testDb, { language: "TypeScript" });
     expect(sonuc).toHaveLength(2);
   });
 
   it("iki filtre birlikte verilince ikisini de saglamali", () => {
     const testDb = testVeritabaniKur();
-    ornekRepolar.forEach((r) => upsert(testDb, r));
-    const kosul = kosullariOlustur({ language: "TypeScript", minStars: 100 });
-    const sonuc = testDb.select().from(repos).where(kosul!).all();
+    reposuKaydet(testDb, ornekRepolar);
+    const sonuc = reposuListele(testDb, { language: "TypeScript", minStars: 100 });
     expect(sonuc).toHaveLength(1);
     expect(sonuc[0]?.name).toBe("repo-ts-yuksek");
   });
 });
 
-describe("upsert davranisi", () => {
+describe("reposuKaydet - upsert davranisi", () => {
   it("ayni id'li kaydi iki kez islemek satir sayisini artirmamali", () => {
     const testDb = testVeritabaniKur();
-    const repo = {
-      id: 1,
-      name: "test-repo",
-      language: "TypeScript",
-      stars: 10,
-      url: "x",
-      fetchedAt: "t1",
-    };
+    const repo = { id: 1, name: "test-repo", language: "TypeScript", stars: 10, url: "x", fetchedAt: "t1" };
 
-    upsert(testDb, repo);
-    upsert(testDb, repo);
+    reposuKaydet(testDb, [repo]);
+    reposuKaydet(testDb, [repo]);
 
-    expect(testDb.select().from(repos).all()).toHaveLength(1);
+    expect(reposuListele(testDb, {})).toHaveLength(1);
   });
 
   it("ikinci islemede degerleri guncellemeli", () => {
     const testDb = testVeritabaniKur();
-    upsert(testDb, {
-      id: 1,
-      name: "eski",
-      language: "TypeScript",
-      stars: 10,
-      url: "x",
-      fetchedAt: "t1",
-    });
-    upsert(testDb, {
-      id: 1,
-      name: "yeni",
-      language: "TypeScript",
-      stars: 999,
-      url: "x",
-      fetchedAt: "t2",
-    });
+    reposuKaydet(testDb, [{ id: 1, name: "eski", language: "TypeScript", stars: 10, url: "x", fetchedAt: "t1" }]);
+    reposuKaydet(testDb, [{ id: 1, name: "yeni", language: "TypeScript", stars: 999, url: "x", fetchedAt: "t2" }]);
 
-    const kayit = testDb.select().from(repos).all()[0];
+    const kayit = reposuListele(testDb, {})[0];
     expect(kayit?.name).toBe("yeni");
     expect(kayit?.stars).toBe(999);
+  });
+
+  it("stars alani yanlislikla silinse test bunu yakalamali (regresyon kontrolu)", () => {
+    // Bu test, gercek reposuKaydet'i cagirdigi icin, biri onConflictDoUpdate'in
+    // set listesinden 'stars' satirini silse bu test kirmizi cikar.
+    const testDb = testVeritabaniKur();
+    reposuKaydet(testDb, [{ id: 1, name: "a", language: "TS", stars: 5, url: "x", fetchedAt: "t" }]);
+    reposuKaydet(testDb, [{ id: 1, name: "a", language: "TS", stars: 500, url: "x", fetchedAt: "t2" }]);
+
+    expect(reposuListele(testDb, {})[0]?.stars).toBe(500);
   });
 });

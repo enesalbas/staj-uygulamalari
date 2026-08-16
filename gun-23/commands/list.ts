@@ -1,8 +1,7 @@
 import { Command, InvalidArgumentError } from "commander";
+import { db } from "../db/client.js";
 import { reposuListele } from "../db/repository.js";
 
-// CLI katmani: option'lari okur, sorguyu db katmanina devreder, sonucu basar.
-// Filtre mantiginin kendisi (SQL kosullari) burada degil, db/repository.ts'te.
 export const listCommand = new Command("list")
   .description("Veritabanindaki repolari listeler")
   .option("--language <dil>", "sadece belirtilen dildeki repolari goster")
@@ -14,7 +13,7 @@ export const listCommand = new Command("list")
     return sayi;
   })
   .action((options: { language?: string; minStars?: number }) => {
-    const sonuclar = reposuListele(options);
+    const sonuclar = reposuListele(db, options);
 
     if (sonuclar.length === 0) {
       console.log("Kriterlere uyan repo bulunamadi.");
