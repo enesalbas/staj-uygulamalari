@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { repos } from "./schema.js";
-import { kosullariOlustur } from "./query-builder.js";
 import { reposuKaydet, reposuListele } from "./repository.js";
 
 function testVeritabaniKur() {
@@ -52,7 +50,14 @@ describe("filtre mantigi (kosullariOlustur)", () => {
 describe("reposuKaydet - upsert davranisi", () => {
   it("ayni id'li kaydi iki kez islemek satir sayisini artirmamali", () => {
     const testDb = testVeritabaniKur();
-    const repo = { id: 1, name: "test-repo", language: "TypeScript", stars: 10, url: "x", fetchedAt: "t1" };
+    const repo = {
+      id: 1,
+      name: "test-repo",
+      language: "TypeScript",
+      stars: 10,
+      url: "x",
+      fetchedAt: "t1",
+    };
 
     reposuKaydet(testDb, [repo]);
     reposuKaydet(testDb, [repo]);
@@ -62,8 +67,12 @@ describe("reposuKaydet - upsert davranisi", () => {
 
   it("ikinci islemede degerleri guncellemeli", () => {
     const testDb = testVeritabaniKur();
-    reposuKaydet(testDb, [{ id: 1, name: "eski", language: "TypeScript", stars: 10, url: "x", fetchedAt: "t1" }]);
-    reposuKaydet(testDb, [{ id: 1, name: "yeni", language: "TypeScript", stars: 999, url: "x", fetchedAt: "t2" }]);
+    reposuKaydet(testDb, [
+      { id: 1, name: "eski", language: "TypeScript", stars: 10, url: "x", fetchedAt: "t1" },
+    ]);
+    reposuKaydet(testDb, [
+      { id: 1, name: "yeni", language: "TypeScript", stars: 999, url: "x", fetchedAt: "t2" },
+    ]);
 
     const kayit = reposuListele(testDb, {})[0];
     expect(kayit?.name).toBe("yeni");
@@ -74,8 +83,12 @@ describe("reposuKaydet - upsert davranisi", () => {
     // Bu test, gercek reposuKaydet'i cagirdigi icin, biri onConflictDoUpdate'in
     // set listesinden 'stars' satirini silse bu test kirmizi cikar.
     const testDb = testVeritabaniKur();
-    reposuKaydet(testDb, [{ id: 1, name: "a", language: "TS", stars: 5, url: "x", fetchedAt: "t" }]);
-    reposuKaydet(testDb, [{ id: 1, name: "a", language: "TS", stars: 500, url: "x", fetchedAt: "t2" }]);
+    reposuKaydet(testDb, [
+      { id: 1, name: "a", language: "TS", stars: 5, url: "x", fetchedAt: "t" },
+    ]);
+    reposuKaydet(testDb, [
+      { id: 1, name: "a", language: "TS", stars: 500, url: "x", fetchedAt: "t2" },
+    ]);
 
     expect(reposuListele(testDb, {})[0]?.stars).toBe(500);
   });

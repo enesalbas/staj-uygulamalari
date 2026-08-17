@@ -7,10 +7,10 @@ Gun 9'da elle yazdigim bes analiz sorgusunu Gun 12'de Drizzle ORM ile yeniden ya
 **SQL**
 
 ```sql
-SELECT developers.name, COUNT(*) AS commit_sayisi
-FROM commits
-JOIN developers ON commits.developer_id = developers.id
-GROUP BY developers.name
+SELECT developers.name, COUNT(commits.id) AS commit_sayisi
+FROM developers
+LEFT JOIN commits ON developers.id = commits.developer_id
+GROUP BY developers.id, developers.name
 ORDER BY commit_sayisi DESC;
 ```
 
@@ -21,9 +21,9 @@ db.select({
     isim: developers.name,
     commitSayisi: count(commits.id),
   })
-  .from(commits)
-  .innerJoin(developers, eq(commits.developerId, developers.id))
-  .groupBy(developers.name)
+  .from(developers)
+  .leftJoin(commits, eq(developers.id, commits.developerId))
+  .groupBy(developers.id, developers.name)
   .orderBy(desc(count(commits.id)))
   .all();
 ```
@@ -31,6 +31,14 @@ db.select({
 **Yorumum:** Burada SQL daha kisa ve okunakli. ORM'de `count()`, `eq()`, `desc()` gibi fonksiyonlar ve parantezler satiri kalabaliklastiriyor. Ayrica SQL'de `ORDER BY commit_sayisi` diye takma ada referans verebiliyorum, ORM'de `desc(count(commits.id))` ifadesini tekrar yazmam gerekti.
 
 ORM'in avantaji: `developers.name` yazarken editor otomatik tamamliyor ve yanlis sutun adi yazarsam kod calismadan hata veriyor.
+
+**Not (guncelleme):** Ilk yazdigimda `COUNT(*)` ve `INNER JOIN` kullanmistim, ama geri
+bildirimde bu sorgunun commit'i olmayan gelistiricileri (Gun 9'daki gibi) atladigini
+fark ettim. `FROM developers LEFT JOIN commits` ile onlari da (0 ile) dahil ettim, ve
+`COUNT(*)` yerine `COUNT(commits.id)` kullandim - cunku LEFT JOIN'de eslesmeyen bir
+satir bile COUNT(*) icin 1 sayilirdi, COUNT(commits.id) ise NULL'lari saymadigi icin
+dogru sonucu (0) veriyor. `GROUP BY`'a da `developers.id`'yi ekledim, ayni isimli iki
+gelistirici olsa isme gore gruplamak onlari birlestirirdi.
 
 ## 2. Son 30 gunde acilmis ama merge edilmemis MR'lar
 
@@ -91,6 +99,10 @@ db.select({ isim: developers.name, commitSayisi: count(commits.id) })
 ```
 
 **Yorumum:** Iki tarafta da 1. sorgunun sonuna tek satir eklendi (`LIMIT 5` / `.limit(5)`). Burada ORM'in zincir yapisi hos: sorguya bir parca eklemek gercekten "bir metod daha eklemek" kadar basit. SQL'de de ayni kolaylik var ama ORM'de bu parcalari degiskene atayip yeniden kullanabilirim, SQL'de metni kopyalamam gerekir.
+
+Bu sorguda "en cok" arandigi icin commit'i olmayan gelistiricilerin listede olmamasi
+zaten dogru davranis (INNER JOIN burada 1. sorgudaki gibi bir sorun degil), o yuzden
+bu bolume 1. sorgudaki LEFT JOIN duzeltmesini uygulamadim.
 
 ## 4. Her takim icin MR sayisi
 
