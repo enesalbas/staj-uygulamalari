@@ -4,3 +4,4 @@ import { config } from "../config/config.js";
 
 export const sqlite = new Database(config.DB_PATH);
 export const db = drizzle(sqlite);
+export type Db = typeof db;

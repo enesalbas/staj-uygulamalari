@@ -2,6 +2,10 @@
 
 Gun 24'teki GEREKSINIMLER.md'nin uzerine, uygulamaya baslamadan once detay tasarim.
 
+Bu belge geri bildirim #6'daki gozden gecirmeden sonra guncellendi: stats'a yuzde ve
+son fetch zamani eklendi, 429 satiri test edilen davranisla eslesecek sekilde
+duzeltildi, transaction ve 403/Retry-After kararlari eklendi.
+
 ## 1. Komut Tasarimi
 
 ### fetch <org...>
@@ -33,6 +37,17 @@ eklenebilir ama simdilik Semafor limiti (3) sabit kalacak.
 HATA: Organizasyon bulunamadi: bu-org-yok
 ```
 
+**Kayit asamasinin transaction karari:** `fetch` sirasinda bir organizasyonun
+repolari tek bir veritabani transaction'i icinde yaziliyor (`db.transaction(...)`).
+Yani "4000. kayitta yazma hatasi olursa ne olur" sorusunun cevabi: o organizasyonun
+**hicbir** kaydi yazilmaz, transaction geri aliniyor (rollback). Kismi/yarim
+senkronizasyon durumuna hic girilmiyor - ya organizasyonun tum gecerli kayitlari
+yazilir ya hicbiri. Bunun sebebi: yarim yazilmis bir organizasyon, "bu veri guncel
+mi eksik mi" sorusunu kullaniciya sessizce birakirdi; tumu-ya-da-hicbiri kurali bu
+belirsizligi ortadan kaldiriyor. Birden fazla org ayni `fetch` cagrisinda isleniyorsa,
+her org kendi bagimsiz transaction'ina sahip - biri basarisiz olsa digerleri
+etkilenmiyor.
+
 ### list
 
 Veritabanindaki repolari, istege bagli filtrelerle listeler.
@@ -42,11 +57,14 @@ repo-cli list
 repo-cli list --language TypeScript
 repo-cli list --min-stars 100
 repo-cli list --language TypeScript --min-stars 100
+repo-cli list --sort stars
+repo-cli list --sort name
 ```
 
 **Option'lar:**
 - `--language <dil>` (opsiyonel) - sadece bu dildeki repolar
 - `--min-stars <sayi>` (opsiyonel) - en az bu kadar yildizi olanlar
+- `--sort <alan>` (opsiyonel, varsayilan: `stars`) - `stars` (azalan) veya `name` (artan)
 
 **Beklenen cikti (sonuc var):** isim/dil/yildiz/url sutunlu tablo + "Toplam: N repo"
 
@@ -54,7 +72,8 @@ repo-cli list --language TypeScript --min-stars 100
 
 ### stats
 
-Kayitli repolarin ozetini gosterir: dile gore dagilim + en yildizli 5 repo.
+Kayitli repolarin ozetini gosterir: dile gore dagilim (yuzdeyle), en yildizli 5 repo,
+ve son fetch zamani.
 
 ```bash
 repo-cli stats
@@ -66,9 +85,9 @@ daraltma eklenebilir.
 **Beklenen cikti:**
 ```
 === Dillere Gore Dagilim ===
-TypeScript: 36
-JavaScript: 13
-Python: 8
+TypeScript: 36 (%50.7)
+JavaScript: 13 (%18.3)
+Python: 8 (%11.3)
 ...
 
 === En Yildizli 5 Repo ===
@@ -77,7 +96,15 @@ Python: 8
 ...
 
 Toplam repo: 71
+Son fetch: 2026-08-17T10:00:00.000Z
 ```
+
+**Yuzde hesabi:** `(dildeki repo sayisi / toplam repo) * 100`, bir ondalik basamaga
+yuvarlanmis. Toplam repo sifirsa yuzde hesaplanmiyor (asagidaki bos veritabani
+durumuna dusuluyor).
+
+**Son fetch zamani:** veritabanindaki tum kayitlarin `fetched_at` alaninin en
+buyugu (`MAX(fetched_at)`). Kullaniciya "bu veri ne kadar guncel" bilgisini veriyor.
 
 **Beklenen cikti (veritabani bos):**
 ```
@@ -170,7 +197,7 @@ repo-takip/
     schema.ts            - Drizzle tablo tanimi (Gun 11)
     client.ts            - veritabani baglantisi (Gun 22)
     query-builder.ts     - saf filtre/sorgu mantigi (Gun 19, 22)
-    repository.ts        - kaydetme/okuma/upsert (Gun 15, 22)
+    repository.ts        - kaydetme/okuma/upsert/ozet, DI ile (db parametre olarak alinir)
   commands/
     fetch.ts             - YENI (eskiden sync.ts, isim degisti)
     list.ts               - mevcut (Gun 18, 22)
@@ -187,11 +214,10 @@ repo-takip/
 
 **Yeni dosyalarin sorumlulugu:**
 - `commands/stats.ts` - sadece CLI katmani. `db/repository.ts`'e yeni bir
-  `reposuOzetle()` fonksiyonu eklenecek (dile gore gruplama + siralama), stats.ts
-  bunu cagirip basacak.
+  `reposuOzetle()` fonksiyonu eklenecek (dile gore gruplama + yuzde + siralama +
+  son fetch zamani), stats.ts bunu cagirip basacak.
 - `commands/export.ts` - sadece CLI katmani. `db/repository.ts`'teki
-  `tumRepolariGetir()` (zaten `reposuListele({})` ile ayni is, dogrudan
-  kullanilabilir) ile veriyi cekip JSON'a yazacak.
+  `reposuListele({})` ile veriyi cekip JSON'a yazacak.
 
 Boylece stats/export komutlari da, fetch/list gibi, "ince CLI, agir is alt
 katmanda" kuralina uyuyor.
@@ -200,17 +226,16 @@ katmanda" kuralina uyuyor.
 
 | Katman | Test turu | Nasil |
 |---|---|---|
-| `validation/github-repo.ts` | Birim testi | Sahte API cevabiyla (gercek agsiz), gecerli/gecersiz veri senaryolari - Gun 19'daki desen aynen |
-| `db/query-builder.ts` | Birim testi | Saf fonksiyon, veritabanina hic dokunmadan test - Gun 22 |
-| `db/repository.ts` (upsert, yeni: ozet) | Entegrasyon testi | Bellekte (`:memory:`) SQLite ile, gercek dosyaya dokunmadan - Gun 19, 22 |
-| `api/github-client.ts` | Entegrasyon testi (mock ile) | `fetch`'i `vi.fn()` ile taklit edip sayfalama/retry/timeout davranisini test etme - Gun 19'da tasarlanmis ama yazilmamisti, bitirme projesinde yazilacak |
+| `validation/github-repo.ts` | Birim testi | Sahte API cevabiyla (gercek agsiz), gecerli/gecersiz veri senaryolari |
+| `db/query-builder.ts` | Birim testi | Saf fonksiyon, veritabanina hic dokunmadan test |
+| `db/repository.ts` (upsert, filtre, siralama, ozet) | Entegrasyon testi | Bellekte (`:memory:`) SQLite ile, gercek dosyaya dokunmadan; fonksiyonlar `db`'yi disaridan parametre olarak aldigi icin (DI) gercek uretim kodu test ediliyor, kopyasi degil |
+| `api/github-client.ts` | Entegrasyon testi (mock ile) | `fetch`'i `vi.stubGlobal` ile taklit edip sayfalama/retry/timeout davranisini test etme - Gun 25'te yazildi, tum senaryolar (429->basari, 3x500->hata, 404->tek deneme, sayfalama) gecti |
 | `commands/*.ts` | Yazilmayacak | CLI katmani ince oldugu icin (sadece cagri yapiyor), ayri test degeri dusuk - alt katmanlar test edildigi icin CLI'nin dogrulugu dolayli olarak garanti ediliyor |
 
-**Yeni eklenecek testler (bitirme projesinde):**
-1. `api/github-client.test.ts` - sahte `fetch` ile sayfalama testi (Gun 19 README'sinde
-   tasarlanmis ama yazilmamisti, simdi yazilacak)
-2. `db/repository.test.ts`'e eklenecek - `reposuOzetle()` fonksiyonu icin: dogru
-   dile gore gruplama, dogru siralama, bos veritabaninda bos sonuc
+**Yeni eklenecek testler (Gun 26):**
+1. `db/repository.test.ts`'e eklenecek - `reposuOzetle()` fonksiyonu icin: dogru
+   dile gore gruplama, dogru yuzde hesabi, dogru siralama, dogru son fetch zamani,
+   bos veritabaninda bos sonuc
 
 ## 5. Hata Senaryolari
 
@@ -218,17 +243,30 @@ katmanda" kuralina uyuyor.
 |---|---|
 | Token eksik/gecersiz (.env yok veya bozuk) | Program hemen baslangicta durur: "HATA: Ortam degiskenleri gecersiz. GITHUB_TOKEN: ..." (Gun 16 config dogrulamasi) |
 | Organizasyon bulunamadi (404) | "Organizasyon bulunamadi: <org>" - programin geri kalani (varsa diger orglar) devam eder |
-| GitHub hiz sinirina takildi (429) | Otomatik 3 kez, ustel geri cekilmeyle yeniden dener; hala basarisizsa "Hiz sinirina takildi, 3 denemede de basarisiz oldu" |
-| GitHub sunucu hatasi (5xx) | Ayni sekilde otomatik yeniden dener; 3 denemede de olmazsa anlamli hata |
+| GitHub hiz sinirina takildi (429) | Toplam 3 deneme (1 asil istek + 2 yeniden deneme), ustel geri cekilmeyle; hala basarisizsa "3 denemede de basarisiz oldu" |
+| GitHub sunucu hatasi (5xx) | Ayni sekilde toplam 3 deneme; 3 denemede de olmazsa anlamli hata |
 | Ag zaman asimi (10sn'de cevap yok) | "Istek zaman asimina ugradi (10000ms): <url>" |
 | API'den gelen veri semaya uymuyor | O tek kayit elenir, digerleri kaydedilir, sonunda "X kayit gecti, Y kayit elendi" + hangi kaydin neden elendigi loglanir |
 | list/stats/export calistirilirken veritabani bos | "Veritabaninda hic repo yok. Once 'repo-cli fetch <org>' calistirin." |
 | export icin --out ile verilen klasor yoksa | Dosya yazma hatasi yakalanip "Dosya yazilamadi: <sebep>" seklinde raporlanir (henuz belirlenmemis detay - export.ts yazilirken netlesecek) |
 | Ayni fetch komutu iki kez calistirilirsa | Veri ciftlenmez (upsert), kayit sayisi ayni kalir - Gun 15'te kanitlanmis davranis |
+| Bir organizasyonun kaydi sirasinda yazma hatasi olursa | O organizasyonun hicbir kaydi veritabaninda kalmaz (transaction rollback); diger organizasyonlar etkilenmez |
+| GitHub birincil hiz sinirini 403 ile dondurur (`x-ratelimit-remaining: 0`) | 403, `x-ratelimit-remaining: 0` basligiyla birlikte geldiginde gecici sayilir ve `Retry-After` (ya da `x-ratelimit-reset`) basligina gore hesaplanan sure kadar beklenip yeniden denenir; ayni 429 gibi toplam 3 deneme |
+
+**403 karari - neden onemli:** GitHub gercek hayatta birincil hiz limitini
+cogunlukla 429 degil, **403 + `x-ratelimit-remaining: 0`** basligiyla donduruyor.
+Mevcut `geciciHataMi` fonksiyonu 403'u kalici sayip hic denemeden vazgeciyordu -
+bu, GEREKSINIMLER.md'deki 1. riskin (rate limit) tam onlemeye ihtiyaci olan kismi.
+Duzeltme: 403 geldiginde `x-ratelimit-remaining` basligi "0" ise gecici say (429
+gibi davran), degilse (gercek yetki sorunuysa) kalici say. Bekleme suresi icin
+`Retry-After` basligi varsa onu, yoksa `x-ratelimit-reset` (Unix zaman damgasi)
+basligindan hesaplanan sureyi kullan - sabit ustel bekleme yerine sunucunun
+soyledigi sureyi beklemek daha kibar bir istemci davranisi.
 
 ## Sonraki Adim
 
-Bu tasarim onaylandiktan sonra, Gun 25-26'da (bitirme projesinin kalan gunleri)
-uygulamaya gecilecek: once `fetch` komutunun `sync`'ten yeniden adlandirilmasi ve
-mevcut katmanlarin tasinmasi, sonra `stats` ve `export` komutlarinin yazilmasi,
-son olarak yeni testlerin eklenmesi.
+Bu tasarim, geri bildirim #6'nin gozden gecirmesinden sonra guncellendi ve Gun 25'te
+uygulamaya gecildi: katmanli iskelet kuruldu, `fetch` ve `list` komutlari (siralama
+dahil) bitirildi, `api/`, `validation/`, `db/` katmanlari testlerle birlikte yazildi.
+Gun 26'da `stats` ve `export` komutlari, transaction sarmalama ve 403/Retry-After
+davranisi eklenecek.
