@@ -3,3 +3,6 @@ node_modules
 repos.db
 coverage
 export.json
+export.json
+export.csv
+*.csv

@@ -14,6 +14,7 @@ export class GitHubApiHatasi extends Error {
     this.durumKodu = durumKodu;
   }
 }
+
 // Cevaptaki Link basligindan "next" (sonraki sayfa) URL'ini cikarir.
 export function sonrakiSayfaUrl(cevap: Response): string | null {
   const link = cevap.headers.get("link");
@@ -28,6 +29,7 @@ export function sonrakiSayfaUrl(cevap: Response): string | null {
 
   return null;
 }
+
 function bekle(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -56,10 +58,43 @@ async function fetchZamanAsimliyla(url: string): Promise<Response> {
     clearTimeout(timer);
   }
 }
-// 429 (hiz siniri) ve 5xx (sunucu hatasi) gecici sayilir, yeniden denemeye deger.
-// 401/404 gibi kalici hatalarda tekrar denemenin anlami yok.
-function geciciHataMi(durumKodu: number): boolean {
-  return durumKodu === 429 || durumKodu >= 500;
+
+// 429 (hiz siniri) ve 5xx (sunucu hatasi) her zaman gecici sayilir, yeniden
+// denemeye deger. 403 ise SADECE x-ratelimit-remaining: 0 basligiyla geldiginde
+// gecici sayilir - GitHub birincil hiz limitini gercekte cogunlukla boyle
+// donduruyor. Baska bir sebeple gelen 403 (gercek yetki sorunu) kalici sayilir.
+function geciciHataMi(cevap: Response): boolean {
+  if (cevap.status === 429 || cevap.status >= 500) {
+    return true;
+  }
+  if (cevap.status === 403 && cevap.headers.get("x-ratelimit-remaining") === "0") {
+    return true;
+  }
+  return false;
+}
+
+// Sunucunun "ne kadar bekle" dedigini okur. Once Retry-After (saniye cinsinden),
+// sonra x-ratelimit-reset (Unix zaman damgasi) basligina bakar. Hicbiri yoksa
+// ustel geri cekilme suresine (varsayilanMs) doner. Sabit bekleme yerine
+// sunucunun soyledigi sureyi kullanmak daha kibar bir istemci davranisidir.
+function sunucununBekleSuresi(cevap: Response, varsayilanMs: number): number {
+  const retryAfter = cevap.headers.get("retry-after");
+  if (retryAfter) {
+    const saniye = Number(retryAfter);
+    if (!Number.isNaN(saniye)) {
+      return saniye * 1000;
+    }
+  }
+
+  const resetZamani = cevap.headers.get("x-ratelimit-reset");
+  if (resetZamani) {
+    const resetMs = Number(resetZamani) * 1000 - Date.now();
+    if (resetMs > 0) {
+      return resetMs;
+    }
+  }
+
+  return varsayilanMs;
 }
 
 export async function apiGet(url: string, deneme = 1): Promise<Response> {
@@ -69,7 +104,7 @@ export async function apiGet(url: string, deneme = 1): Promise<Response> {
     return cevap;
   }
 
-  if (geciciHataMi(cevap.status)) {
+  if (geciciHataMi(cevap)) {
     if (deneme >= MAX_DENEME) {
       logger.error("Gecici hata, tum denemeler tukendi", {
         durumKodu: cevap.status,
@@ -79,7 +114,9 @@ export async function apiGet(url: string, deneme = 1): Promise<Response> {
       throw new GitHubApiHatasi(cevap.status, `${MAX_DENEME} denemede de basarisiz oldu.`);
     }
 
-    const bekleMs = 1000 * 2 ** (deneme - 1);
+    const ustelBekleme = 1000 * 2 ** (deneme - 1);
+    const bekleMs = sunucununBekleSuresi(cevap, ustelBekleme);
+
     logger.warn("Gecici hata, yeniden deneniyor", {
       durumKodu: cevap.status,
       deneme,
@@ -94,6 +131,7 @@ export async function apiGet(url: string, deneme = 1): Promise<Response> {
 
   const mesajlar: Record<number, string> = {
     401: "Token gecersiz veya suresi dolmus.",
+    403: "Erisim reddedildi (yetki sorunu).",
     404: "Organizasyon bulunamadi.",
   };
   throw new GitHubApiHatasi(
@@ -101,6 +139,7 @@ export async function apiGet(url: string, deneme = 1): Promise<Response> {
     mesajlar[cevap.status] ?? `Beklenmeyen durum kodu: ${cevap.status}`
   );
 }
+
 // Bir organizasyonun tum repolarini, sayfalamayi takip ederek ceker.
 // Donen deger dogrulanmamis ham veridir; dogrulama validation katmaninin isi.
 export async function tumRepolariCek(org: string): Promise<unknown[]> {

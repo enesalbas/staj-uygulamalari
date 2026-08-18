@@ -27,6 +27,15 @@ const ornekRepolar = [
 ];
 
 describe("filtre mantigi (kosullariOlustur)", () => {
+it("transaction icinde bir kayit hata verirse hicbir kayit yazilmamali (rollback)", () => {
+  const testDb = testVeritabaniKur();
+  const gecerli = { id: 1, name: "gecerli", language: "TS", stars: 5, url: "x", fetchedAt: "t" };
+  const gecersiz = { id: 2, name: null, language: "TS", stars: 10, url: "y", fetchedAt: "t" } as never;
+
+  expect(() => reposuKaydet(testDb, [gecerli, gecersiz])).toThrow();
+  expect(reposuListele(testDb, {})).toHaveLength(0);
+});
+
   it("filtresiz tum repolari donmeli", () => {
     const testDb = testVeritabaniKur();
     reposuKaydet(testDb, ornekRepolar);

@@ -45,6 +45,48 @@ describe("apiGet - retry mantigi (sahte fetch ile)", () => {
     await expect(apiGet("https://api.github.com/test")).rejects.toBeInstanceOf(GitHubApiHatasi);
     expect(fakeFetch).toHaveBeenCalledTimes(1);
   });
+
+  it("403 + x-ratelimit-remaining:0 gelirse gecici sayilip yeniden denemeli", async () => {
+    const fakeFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(null, { status: 403, headers: { "x-ratelimit-remaining": "0" } })
+      )
+      .mockResolvedValueOnce(new Response("tamam", { status: 200 }));
+    vi.stubGlobal("fetch", fakeFetch);
+
+    const sonucPromise = apiGet("https://api.github.com/test");
+    await vi.runAllTimersAsync();
+    const sonuc = await sonucPromise;
+
+    expect(sonuc.status).toBe(200);
+    expect(fakeFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("403 baska bir sebeple gelirse kalici sayilip hic yeniden denenmemeli", async () => {
+    const fakeFetch = vi.fn().mockResolvedValue(new Response(null, { status: 403 }));
+    vi.stubGlobal("fetch", fakeFetch);
+
+    await expect(apiGet("https://api.github.com/test")).rejects.toBeInstanceOf(GitHubApiHatasi);
+    expect(fakeFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("Retry-After basligi varsa ustel bekleme yerine onu kullanmali", async () => {
+    const fakeFetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 429, headers: { "retry-after": "5" } }))
+      .mockResolvedValueOnce(new Response("tamam", { status: 200 }));
+    vi.stubGlobal("fetch", fakeFetch);
+
+    const sonucPromise = apiGet("https://api.github.com/test");
+    await vi.advanceTimersByTimeAsync(4999);
+    expect(fakeFetch).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(2);
+    const sonuc = await sonucPromise;
+    expect(sonuc.status).toBe(200);
+    expect(fakeFetch).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("sonrakiSayfaUrl", () => {
