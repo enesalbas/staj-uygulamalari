@@ -4,7 +4,14 @@ import { csvUret } from "./csv.js";
 describe("csvUret", () => {
   it("basit repolari dogru CSV satirlarina cevirmeli", () => {
     const csv = csvUret([
-      { id: 1, name: "repo-a", language: "TypeScript", stars: 100, url: "https://x.com/a", fetchedAt: "t1" },
+      {
+        id: 1,
+        name: "repo-a",
+        language: "TypeScript",
+        stars: 100,
+        url: "https://x.com/a",
+        fetchedAt: "t1",
+      },
     ]);
     expect(csv).toBe(
       "id,name,language,stars,url,fetchedAt\n1,repo-a,TypeScript,100,https://x.com/a,t1\n"
@@ -26,9 +33,7 @@ describe("csvUret", () => {
   });
 
   it("language null ise bos hucre birakmali", () => {
-    const csv = csvUret([
-      { id: 1, name: "a", language: null, stars: 5, url: "x", fetchedAt: "t" },
-    ]);
+    const csv = csvUret([{ id: 1, name: "a", language: null, stars: 5, url: "x", fetchedAt: "t" }]);
     expect(csv).toContain("1,a,,5,x,t");
   });
 

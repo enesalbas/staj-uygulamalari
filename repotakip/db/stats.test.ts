@@ -31,11 +31,14 @@ describe("reposuOzetle", () => {
 
   it("dile gore dogru gruplama ve yuzde hesabi yapmali", () => {
     const testDb = testVeritabaniKur();
-    testDb.insert(repos).values([
-      { id: 1, name: "a", language: "TypeScript", stars: 500, url: "x", fetchedAt: "t1" },
-      { id: 2, name: "b", language: "TypeScript", stars: 10, url: "y", fetchedAt: "t2" },
-      { id: 3, name: "c", language: "Python", stars: 300, url: "z", fetchedAt: "t3" },
-    ]).run();
+    testDb
+      .insert(repos)
+      .values([
+        { id: 1, name: "a", language: "TypeScript", stars: 500, url: "x", fetchedAt: "t1" },
+        { id: 2, name: "b", language: "TypeScript", stars: 10, url: "y", fetchedAt: "t2" },
+        { id: 3, name: "c", language: "Python", stars: 300, url: "z", fetchedAt: "t3" },
+      ])
+      .run();
 
     const ozet = reposuOzetle(testDb);
     expect(ozet.toplamRepo).toBe(3);
@@ -47,9 +50,10 @@ describe("reposuOzetle", () => {
 
   it("language null ise 'Bilinmiyor' olarak gruplamali", () => {
     const testDb = testVeritabaniKur();
-    testDb.insert(repos).values([
-      { id: 1, name: "a", language: null, stars: 10, url: "x", fetchedAt: "t" },
-    ]).run();
+    testDb
+      .insert(repos)
+      .values([{ id: 1, name: "a", language: null, stars: 10, url: "x", fetchedAt: "t" }])
+      .run();
 
     const ozet = reposuOzetle(testDb);
     expect(ozet.dilDagilimi).toEqual([{ language: "Bilinmiyor", adet: 1, yuzde: 100 }]);
@@ -57,11 +61,14 @@ describe("reposuOzetle", () => {
 
   it("en yildizli 5'i azalan sirada dondurmeli", () => {
     const testDb = testVeritabaniKur();
-    testDb.insert(repos).values([
-      { id: 1, name: "dusuk", language: "TS", stars: 10, url: "x", fetchedAt: "t" },
-      { id: 2, name: "yuksek", language: "TS", stars: 500, url: "y", fetchedAt: "t" },
-      { id: 3, name: "orta", language: "TS", stars: 100, url: "z", fetchedAt: "t" },
-    ]).run();
+    testDb
+      .insert(repos)
+      .values([
+        { id: 1, name: "dusuk", language: "TS", stars: 10, url: "x", fetchedAt: "t" },
+        { id: 2, name: "yuksek", language: "TS", stars: 500, url: "y", fetchedAt: "t" },
+        { id: 3, name: "orta", language: "TS", stars: 100, url: "z", fetchedAt: "t" },
+      ])
+      .run();
 
     const ozet = reposuOzetle(testDb);
     expect(ozet.enYildizli.map((r) => r.name)).toEqual(["yuksek", "orta", "dusuk"]);
@@ -69,10 +76,27 @@ describe("reposuOzetle", () => {
 
   it("en yeni fetchedAt degerini sonFetch olarak dondurmeli", () => {
     const testDb = testVeritabaniKur();
-    testDb.insert(repos).values([
-      { id: 1, name: "a", language: "TS", stars: 10, url: "x", fetchedAt: "2026-08-18T09:00:00.000Z" },
-      { id: 2, name: "b", language: "TS", stars: 20, url: "y", fetchedAt: "2026-08-18T11:00:00.000Z" },
-    ]).run();
+    testDb
+      .insert(repos)
+      .values([
+        {
+          id: 1,
+          name: "a",
+          language: "TS",
+          stars: 10,
+          url: "x",
+          fetchedAt: "2026-08-18T09:00:00.000Z",
+        },
+        {
+          id: 2,
+          name: "b",
+          language: "TS",
+          stars: 20,
+          url: "y",
+          fetchedAt: "2026-08-18T11:00:00.000Z",
+        },
+      ])
+      .run();
 
     const ozet = reposuOzetle(testDb);
     expect(ozet.sonFetch).toBe("2026-08-18T11:00:00.000Z");

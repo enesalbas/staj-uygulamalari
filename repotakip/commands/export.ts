@@ -7,12 +7,17 @@ import { logger } from "../logging/logger.js";
 
 export const exportCommand = new Command("export")
   .description("Kayitli tum repolari bir dosyaya aktarir")
-  .option("--format <bicim>", "cikti formati: json veya csv", (deger) => {
-    if (deger !== "json" && deger !== "csv") {
-      throw new InvalidArgumentError("Sadece 'json' veya 'csv' olabilir");
-    }
-    return deger;
-  }, "json")
+  .option(
+    "--format <bicim>",
+    "cikti formati: json veya csv",
+    (deger) => {
+      if (deger !== "json" && deger !== "csv") {
+        throw new InvalidArgumentError("Sadece 'json' veya 'csv' olabilir");
+      }
+      return deger;
+    },
+    "json"
+  )
   .option("--output <dosya>", "cikti dosyasinin adi")
   .action(async (options: { format: "json" | "csv"; output?: string }) => {
     const repolar = reposuListele(db, {});
