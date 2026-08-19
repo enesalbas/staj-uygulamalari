@@ -15,14 +15,41 @@ projesidir.
 
 ## Kurulum
 
+Bu adimlarin **hepsi sirayla ve eksiksiz** takip edilmeli - herhangi biri atlanirsa
+sonraki komutlar anlamli olmayan hatalar verir (asagida her adimin nedeni aciklandi).
+
 ```bash
 git clone <bu-repo-url>
 cd repotakip
 npm install
+```
+
+### Windows'ta better-sqlite3 kurulum sorunu (bilinen kisit)
+
+`better-sqlite3`, C++ ile yazilmis, derlenmesi gereken (native) bir pakettir.
+Bazi Windows + yeni Node surumu (24+) kombinasyonlarinda `npm install`,
+"Visual Studio bulunamadi" hatasi verebilir - onceden derlenmis (prebuilt)
+bir ikili dosyanin indirilememesinden kaynaklanir.
+
+Karsilasirsaniz once sunu deneyin (cogu zaman yeterli oluyor):
+```bash
+npm cache clean --force
+npm install better-sqlite3
+```
+
+Hala sorun devam ederse iki secenek var:
+1. **Node'u LTS surumune dusurmek** (nvm-windows ile `nvm install 22.11.0` `nvm use 22.11.0`)
+2. **Visual Studio Build Tools kurmak** ("Desktop development with C++" workload'iyla,
+   https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+
+### 2. Ortam degiskenlerini ayarlayin
+
+```bash
 cp .env.example .env
 ```
 
-`.env` dosyasini acip GitHub kisisel erisim token'inizi ekleyin:
+`.env` dosyasini acip **gercek GitHub token'inizi** ekleyin (bu adim atlanirsa
+her komut "GITHUB_TOKEN: Invalid input" hatasiyla en basta durur):
 
 ```
 GITHUB_TOKEN=github_pat_xxxxxxxxxxxxxxxxxxxx
@@ -32,12 +59,15 @@ Token olusturmak icin: GitHub → Settings → Developer settings → Personal a
 tokens → Generate new token. Sadece public repo okumak icin ekstra bir yetki
 (scope) secmenize gerek yok, varsayilan izinler yeterli.
 
-Veritabanini olusturun:
+### 3. Veritabanini olusturun (ZORUNLU - atlanirsa "no such table: repos" hatasi alirsiniz)
 
 ```bash
 npx drizzle-kit generate
 npx drizzle-kit migrate
 ```
+
+Bu iki komut calistirilmadan `fetch` komutu calisir ama veriyi kaydederken
+hata verir.
 
 ## Komutlar
 
@@ -62,6 +92,12 @@ Birden fazla organizasyon (aynı anda en fazla 3 tanesi islenir):
 npx tsx --env-file=.env main.ts fetch octokit vercel expressjs
 ```
 
+**Windows/PowerShell notu:** `--env-file=.env` bazi PowerShell surumlerinde
+".env: not found" hatasi verirse, tirnak icine alarak deneyin:
+```powershell
+npx tsx "--env-file=.env" main.ts fetch octokit
+```
+
 Ayni komut tekrar calistirilirsa veri ciftlenmez (upsert). Bir organizasyonun
 kaydi tek bir transaction icinde yapilir - kayit sirasinda bir hata olursa o
 organizasyonun hicbir kaydi veritabaninda kalmaz.
@@ -69,19 +105,20 @@ organizasyonun hicbir kaydi veritabaninda kalmaz.
 ### list — filtreli listele
 
 ```bash
-npx tsx --env-file=.env main.ts list --language TypeScript --min-stars 100 --sort name
+npx tsx --env-file=.env main.ts list --language TypeScript --sort name
 ```
 
-Cikti:
+Cikti (gercek calistirmadan, 36 TypeScript reposundan ilk birkaci):
 ```
-┌─────────┬──────────────┬──────────────┬────────┬─────────────────────────────────────┐
+┌─────────┬──────────────┬──────────────┬────────┬───────────────────────────────────┐
 │ (index) │ isim         │ dil          │ yildiz │ url                                 │
-├─────────┼──────────────┼──────────────┼────────┼─────────────────────────────────────┤
-│ 0       │ 'core.js'    │ 'TypeScript' │ 1282   │ 'https://github.com/octokit/core.js' │
-│ 1       │ 'octokit.js' │ 'TypeScript' │ 7828   │ 'https://github.com/octokit/octokit.js' │
-└─────────┴──────────────┴──────────────┴────────┴─────────────────────────────────────┘
+├─────────┼──────────────┼──────────────┼────────┼───────────────────────────────────┤
+│ 0       │ 'action.js'  │ 'TypeScript' │ 212    │ 'https://github.com/octokit/action.js' │
+│ 1       │ 'app.js'     │ 'TypeScript' │ 190    │ 'https://github.com/octokit/app.js'    │
+...
+└─────────┴──────────────┴──────────────┴────────┴───────────────────────────────────┘
 
-Toplam: 2 repo
+Toplam: 36 repo
 ```
 
 Option'lar:
@@ -107,14 +144,14 @@ Ruby: 2 (%2.8)
 Objective-C: 1 (%1.4)
 
 === En Yildizli 5 Repo ===
-1. octokit.js (TypeScript) - 7828 yildiz
+1. octokit.js (TypeScript) - 7829 yildiz
 2. octokit.rb (Ruby) - 3949 yildiz
-3. octokit.net (C#) - 2856 yildiz
+3. octokit.net (C#) - 2857 yildiz
 4. octokit.objc (Objective-C) - 1823 yildiz
-5. core.js (TypeScript) - 1282 yildiz
+5. core.js (TypeScript) - 1283 yildiz
 
 Toplam repo: 71
-Son fetch: 2026-08-17T13:19:33.433Z
+Son fetch: 2026-08-19T11:21:05.545Z
 ```
 
 ### export — disa aktar
@@ -127,7 +164,7 @@ npx tsx --env-file=.env main.ts export --format csv --output rapor.csv
 
 Cikti:
 ```
-71 repo export.json dosyasina yazildi.
+71 repo export.csv dosyasina yazildi.
 ```
 
 Option'lar:
@@ -140,7 +177,7 @@ JSON semasi:
   "olusturmaTarihi": "2026-08-18T13:03:23.479Z",
   "toplamRepo": 71,
   "repolar": [
-    { "id": 711976, "name": "octokit.js", "language": "TypeScript", "stars": 7828, "url": "...", "fetchedAt": "..." }
+    { "id": 711976, "name": "octokit.js", "language": "TypeScript", "stars": 7829, "url": "...", "fetchedAt": "..." }
   ]
 }
 ```
@@ -148,7 +185,7 @@ JSON semasi:
 CSV formati:
 ```
 id,name,language,stars,url,fetchedAt
-711976,octokit.js,TypeScript,7828,https://github.com/octokit/octokit.js,2026-08-17T13:19:33.433Z
+711976,octokit.js,TypeScript,7829,https://github.com/octokit/octokit.js,2026-08-19T11:21:05.545Z
 ```
 
 ## Mimari
@@ -233,6 +270,8 @@ injection) - testte gercek dosyaya dokunmadan, bellekteki (`:memory:`) bir
 veritabaniyla calisirlar. `api/github-client.ts`'teki retry/timeout mantigi
 `vi.stubGlobal("fetch", ...)` ile sahte ag cevaplari verilerek test edilir.
 
+Bu proje hem Mac hem Windows'ta sifirdan klonlanip test edilmistir.
+
 ## Ortam Degiskenleri
 
 | Degisken | Zorunlu mu | Varsayilan | Aciklama |
@@ -247,6 +286,7 @@ veritabaniyla calisirlar. `api/github-client.ts`'teki retry/timeout mantigi
 | Senaryo | Kullanici Ne Gorur |
 |---|---|
 | Token eksik/gecersiz | Program baslamadan durur: `HATA: Ortam degiskenleri gecersiz. GITHUB_TOKEN: ...` |
+| Veritabani migrate edilmemis | `SqliteError: no such table: repos` - kurulumda `drizzle-kit generate`+`migrate` adimi atlandiginda |
 | Organizasyon bulunamadi (404) | `Organizasyon bulunamadi.` - kalici hata, tek denemede durur |
 | GitHub hiz sinirina takildi (429 veya 403+`x-ratelimit-remaining:0`) | Toplam 3 deneme, `Retry-After`/`x-ratelimit-reset` basligina veya ustel geri cekilmeye gore beklenir |
 | Sunucu hatasi (5xx) | Ayni sekilde toplam 3 deneme |
