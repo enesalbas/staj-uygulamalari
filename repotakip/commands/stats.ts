@@ -5,7 +5,9 @@ import { reposuOzetle } from "../db/stats.js";
 // CLI katmani: ozet mantiginin kendisi db/stats.ts'te (reposuOzetle), burada
 // sadece cagrilip cikti formatlaniyor.
 export const statsCommand = new Command("stats")
-  .description("Kayitli repolarin ozetini gosterir: dil dagilimi, en yildizli repolar, son fetch zamani")
+  .description(
+    "Kayitli repolarin ozetini gosterir: dil dagilimi, en yildizli repolar, son fetch zamani"
+  )
   .action(() => {
     const ozet = reposuOzetle(db);
 

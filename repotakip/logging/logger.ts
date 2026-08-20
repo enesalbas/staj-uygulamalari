@@ -10,10 +10,7 @@ const gelisimFormat = winston.format.combine(
   })
 );
 
-const uretimFormat = winston.format.combine(
-  winston.format.timestamp(),
-  winston.format.json()
-);
+const uretimFormat = winston.format.combine(winston.format.timestamp(), winston.format.json());
 
 export const logger = winston.createLogger({
   level: config.LOG_LEVEL,

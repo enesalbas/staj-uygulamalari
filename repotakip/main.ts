@@ -4,7 +4,6 @@ import { listCommand } from "./commands/list.js";
 import { statsCommand } from "./commands/stats.js";
 import { exportCommand } from "./commands/export.js";
 
-
 const program = new Command();
 
 program

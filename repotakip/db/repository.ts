@@ -47,7 +47,5 @@ export function reposuListele(veriTabani: VeriTabani, secenekler: ListSecenekler
   const siralama = siralamaOlustur(secenekler.sort);
 
   const sorgu = veriTabani.select().from(repos);
-  return kosul
-    ? sorgu.where(kosul).orderBy(siralama).all()
-    : sorgu.orderBy(siralama).all();
+  return kosul ? sorgu.where(kosul).orderBy(siralama).all() : sorgu.orderBy(siralama).all();
 }
